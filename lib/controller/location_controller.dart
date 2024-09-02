@@ -1,5 +1,4 @@
-
-
+import 'dart:ui';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,42 +6,34 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 class LocationController extends GetxController {
   Position? position;
   bool isSuccess = false;
-  List<LatLng> polylineCoOrdinates = [];
-  Future<void> currentLocation() async {
-    LocationPermission locationPermission = await Geolocator.checkPermission();
+  List<LatLng> polylineCoordinates = [];
 
-    if (locationPermission == LocationPermission.denied ||
-        locationPermission == LocationPermission.deniedForever) {
-      // Request permission if it's denied
-      locationPermission = await Geolocator.requestPermission();
-    }
+  Future<void> locationPermissionHandler(VoidCallback startService) async {
+    LocationPermission permission = await Geolocator.checkPermission();
 
-    if (locationPermission == LocationPermission.always ||
-        locationPermission == LocationPermission.whileInUse) {
-      final bool isLocationServiceEnabled =
-      await Geolocator.isLocationServiceEnabled();
-      if (isLocationServiceEnabled) {
-        position = await Geolocator.getCurrentPosition();
-
-        isSuccess = true;
-        update();
-        Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.bestForNavigation,
-              timeLimit: Duration(seconds: 10)),
-        ).listen((lastPosition) {
-          print(position.toString());
-          position = lastPosition;
-          polylineCoOrdinates.add(LatLng(lastPosition.latitude, lastPosition.longitude));
-          update();
-        });
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      final bool isEnabled = await Geolocator.isLocationServiceEnabled();
+      if (isEnabled) {
+        startService();
       } else {
-        // Handle the case where location services are disabled
-        currentLocation();
+        await Geolocator.openLocationSettings();
+        // Optionally re-check if the location service is enabled after opening settings
+        if (await Geolocator.isLocationServiceEnabled()) {
+          startService();
+        }
       }
-    } else if (locationPermission == LocationPermission.deniedForever) {
-      // If the permission is still deniedForever, take the user to settings
-      Geolocator.openAppSettings();
+    } else {
+      if (permission == LocationPermission.deniedForever) {
+        await Geolocator.openAppSettings();
+        return;
+      }
+      LocationPermission permissionRequest = await Geolocator.requestPermission();
+      if (permissionRequest == LocationPermission.always ||
+          permissionRequest == LocationPermission.whileInUse) {
+        // Call handler again to re-check the permission status
+        locationPermissionHandler(startService);
+      }
     }
   }
 }
