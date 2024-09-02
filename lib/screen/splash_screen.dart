@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocation/routes/routes.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 
-import 'app.dart';
+import '../app.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,10 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
   Future<void> _moveToNextScreen() async {
     await Future.delayed(Duration(seconds: 2));
-    if (mounted) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => HomeScreen()));
-    }
+    Get.offAllNamed(homeScreen);
   }
 
 
